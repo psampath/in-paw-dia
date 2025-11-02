@@ -40,7 +40,7 @@ const BreedProfile = () => {
   const fetchBreed = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('breeds')
+      .from('pets')
       .select('*')
       .eq('id', id)
       .single();

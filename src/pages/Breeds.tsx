@@ -41,7 +41,7 @@ const Breeds = () => {
   const fetchBreeds = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('breeds')
+      .from('pets')
       .select('*')
       .order('name', { ascending: true });
 

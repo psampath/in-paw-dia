@@ -27,7 +27,7 @@ const Home = () => {
 
   const fetchFeaturedBreeds = async () => {
     const { data, error } = await supabase
-      .from('breeds')
+      .from('pets')
       .select('*')
       .eq('is_featured', true)
       .limit(6);

@@ -36,7 +36,7 @@ const Admin = () => {
   const fetchBreeds = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('breeds')
+      .from('pets')
       .select('id, name, type, origin, size, updated_at')
       .order('updated_at', { ascending: false });
 
@@ -51,7 +51,7 @@ const Admin = () => {
       return;
     }
 
-    const { error } = await supabase.from('breeds').delete().eq('id', id);
+    const { error } = await supabase.from('pets').delete().eq('id', id);
 
     if (error) {
       toast.error('Failed to delete breed');
