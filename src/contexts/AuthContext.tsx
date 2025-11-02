@@ -30,15 +30,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch user role separately
+          // Fetch user roles from secure user_roles table
           setTimeout(async () => {
-            const { data: profile } = await supabase
-              .from('profiles')
+            const { data: rolesData } = await supabase
+              .from('user_roles')
               .select('role')
-              .eq('id', session.user.id)
-              .single();
+              .eq('user_id', session.user.id);
             
-            setUserRole(profile?.role ?? null);
+            // Set the highest role (admin > editor > viewer)
+            if (rolesData && rolesData.length > 0) {
+              if (rolesData.some(r => r.role === 'admin')) {
+                setUserRole('admin');
+              } else if (rolesData.some(r => r.role === 'editor')) {
+                setUserRole('editor');
+              } else {
+                setUserRole('viewer');
+              }
+            } else {
+              setUserRole(null);
+            }
           }, 0);
         } else {
           setUserRole(null);
@@ -53,12 +63,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (session?.user) {
         supabase
-          .from('profiles')
+          .from('user_roles')
           .select('role')
-          .eq('id', session.user.id)
-          .single()
-          .then(({ data: profile }) => {
-            setUserRole(profile?.role ?? null);
+          .eq('user_id', session.user.id)
+          .then(({ data: rolesData }) => {
+            // Set the highest role
+            if (rolesData && rolesData.length > 0) {
+              if (rolesData.some(r => r.role === 'admin')) {
+                setUserRole('admin');
+              } else if (rolesData.some(r => r.role === 'editor')) {
+                setUserRole('editor');
+              } else {
+                setUserRole('viewer');
+              }
+            } else {
+              setUserRole(null);
+            }
             setLoading(false);
           });
       } else {
