@@ -83,10 +83,10 @@ const Home = () => {
           <div className="max-w-4xl mx-auto text-center animate-fade-in">
             <h1 className="font-heading text-4xl md:text-6xl font-bold text-foreground mb-6">
               Discover India's Beloved
-              <span className="text-primary"> Dog & Cat Breeds</span>
+              <span className="text-primary"> Dog Breeds</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground mb-8">
-              Explore comprehensive information about breeds suited for Indian climates, 
+              Explore comprehensive information about dog breeds suited for Indian climates, 
               temperaments, care requirements, and find your perfect companion.
             </p>
 
@@ -173,7 +173,7 @@ const Home = () => {
               Featured Breeds
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Popular dog and cat breeds that thrive in India's diverse climates
+              Popular dog breeds that thrive in India's diverse climates
             </p>
           </div>
 
@@ -212,7 +212,7 @@ const Home = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <Link to="/breeds?type=dog&origin=India">
+            <Link to="/breeds?origin=India">
               <div className="bg-card p-8 rounded-xl border border-border hover:border-primary hover:shadow-lg transition-all duration-300 text-center group">
                 <Shield className="h-12 w-12 text-primary mx-auto mb-4 group-hover:scale-110 transition-transform" />
                 <h3 className="font-heading text-xl font-bold text-foreground mb-2">
@@ -224,14 +224,14 @@ const Home = () => {
               </div>
             </Link>
 
-            <Link to="/breeds?type=cat">
+            <Link to="/breeds?size=Large">
               <div className="bg-card p-8 rounded-xl border border-border hover:border-primary hover:shadow-lg transition-all duration-300 text-center group">
                 <Heart className="h-12 w-12 text-primary mx-auto mb-4 group-hover:scale-110 transition-transform" />
                 <h3 className="font-heading text-xl font-bold text-foreground mb-2">
-                  Popular Cats
+                  Large Breeds
                 </h3>
                 <p className="text-muted-foreground">
-                  Feline companions suited for Indian homes
+                  Loyal companions for spacious homes
                 </p>
               </div>
             </Link>
@@ -243,7 +243,7 @@ const Home = () => {
                   Apartment-Friendly
                 </h3>
                 <p className="text-muted-foreground">
-                  Perfect breeds for apartment living
+                  Perfect small breeds for apartment living
                 </p>
               </div>
             </Link>

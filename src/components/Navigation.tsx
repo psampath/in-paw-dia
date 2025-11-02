@@ -23,13 +23,7 @@ export const Navigation = () => {
               Home
             </Link>
             <Link to="/breeds" className="text-foreground hover:text-primary transition-colors font-medium">
-              All Breeds
-            </Link>
-            <Link to="/breeds?type=dog" className="text-foreground hover:text-primary transition-colors font-medium">
-              Dogs
-            </Link>
-            <Link to="/breeds?type=cat" className="text-foreground hover:text-primary transition-colors font-medium">
-              Cats
+              Breeds
             </Link>
             {user && (userRole === 'editor' || userRole === 'admin') && (
               <Link to="/admin" className="text-foreground hover:text-primary transition-colors font-medium">
@@ -74,21 +68,7 @@ export const Navigation = () => {
               className="block text-foreground hover:text-primary transition-colors font-medium py-2"
               onClick={() => setIsMenuOpen(false)}
             >
-              All Breeds
-            </Link>
-            <Link
-              to="/breeds?type=dog"
-              className="block text-foreground hover:text-primary transition-colors font-medium py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Dogs
-            </Link>
-            <Link
-              to="/breeds?type=cat"
-              className="block text-foreground hover:text-primary transition-colors font-medium py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Cats
+              Breeds
             </Link>
             {user && (userRole === 'editor' || userRole === 'admin') && (
               <Link
