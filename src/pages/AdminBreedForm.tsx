@@ -47,7 +47,7 @@ const AdminBreedForm = () => {
   }, [user, userRole, isEdit, id, navigate]);
 
   const fetchBreed = async () => {
-    const { data, error } = await supabase.from('breeds').select('*').eq('id', id).single();
+    const { data, error } = await supabase.from('pets').select('*').eq('id', id).single();
 
     if (!error && data) {
       setFormData({
@@ -66,7 +66,7 @@ const AdminBreedForm = () => {
         is_featured: data.is_featured || false,
       });
     } else {
-      toast.error('Breed not found');
+      toast.error('Pet not found');
       navigate('/admin');
     }
   };
@@ -87,12 +87,12 @@ const AdminBreedForm = () => {
 
     if (isEdit) {
       const { error: updateError } = await supabase
-        .from('breeds')
+        .from('pets')
         .update(breedData)
         .eq('id', id);
       error = updateError;
     } else {
-      const { error: insertError } = await supabase.from('breeds').insert([breedData]);
+      const { error: insertError } = await supabase.from('pets').insert([breedData]);
       error = insertError;
     }
 

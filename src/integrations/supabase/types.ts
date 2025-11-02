@@ -14,7 +14,7 @@ export type Database = {
   }
   public: {
     Tables: {
-      breeds: {
+      pets: {
         Row: {
           care_requirements: string | null
           created_at: string
@@ -26,9 +26,13 @@ export type Database = {
           origin: string | null
           photos: string[] | null
           physical_appearance: string | null
+          popularity_score: number | null
           size: string | null
+          slug: string | null
+          species_id: string | null
           suitability: string | null
           temperament: string | null
+          traits: Json | null
           type: string
           updated_at: string
           weight_range: string | null
@@ -44,9 +48,13 @@ export type Database = {
           origin?: string | null
           photos?: string[] | null
           physical_appearance?: string | null
+          popularity_score?: number | null
           size?: string | null
+          slug?: string | null
+          species_id?: string | null
           suitability?: string | null
           temperament?: string | null
+          traits?: Json | null
           type: string
           updated_at?: string
           weight_range?: string | null
@@ -62,14 +70,26 @@ export type Database = {
           origin?: string | null
           photos?: string[] | null
           physical_appearance?: string | null
+          popularity_score?: number | null
           size?: string | null
+          slug?: string | null
+          species_id?: string | null
           suitability?: string | null
           temperament?: string | null
+          traits?: Json | null
           type?: string
           updated_at?: string
           weight_range?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pets_species_id_fkey"
+            columns: ["species_id"]
+            isOneToOne: false
+            referencedRelation: "species"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -86,6 +106,132 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+        }
+        Relationships: []
+      }
+      questions: {
+        Row: {
+          created_at: string | null
+          id: string
+          options: Json | null
+          order_num: number | null
+          text: string
+          trait_mapping: Json | null
+          type: string
+          weight: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          options?: Json | null
+          order_num?: number | null
+          text: string
+          trait_mapping?: Json | null
+          type: string
+          weight?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          options?: Json | null
+          order_num?: number | null
+          text?: string
+          trait_mapping?: Json | null
+          type?: string
+          weight?: number | null
+        }
+        Relationships: []
+      }
+      species: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          icon_url: string | null
+          id: string
+          name: string
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          icon_url?: string | null
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          icon_url?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      traits: {
+        Row: {
+          created_at: string | null
+          id: string
+          key: string
+          label: string
+          max_value: number | null
+          min_value: number | null
+          options: Json | null
+          type: Database["public"]["Enums"]["trait_type"]
+          unit: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          key: string
+          label: string
+          max_value?: number | null
+          min_value?: number | null
+          options?: Json | null
+          type: Database["public"]["Enums"]["trait_type"]
+          unit?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          key?: string
+          label?: string
+          max_value?: number | null
+          min_value?: number | null
+          options?: Json | null
+          type?: Database["public"]["Enums"]["trait_type"]
+          unit?: string | null
+        }
+        Relationships: []
+      }
+      user_responses: {
+        Row: {
+          answers: Json
+          created_at: string | null
+          id: string
+          recommended_pet_ids: string[] | null
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          answers: Json
+          created_at?: string | null
+          id?: string
+          recommended_pet_ids?: string[] | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          answers?: Json
+          created_at?: string | null
+          id?: string
+          recommended_pet_ids?: string[] | null
+          session_id?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -126,6 +272,7 @@ export type Database = {
     }
     Enums: {
       app_role: "viewer" | "editor" | "admin"
+      trait_type: "text" | "number" | "range" | "boolean" | "enum"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -254,6 +401,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["viewer", "editor", "admin"],
+      trait_type: ["text", "number", "range", "boolean", "enum"],
     },
   },
 } as const
