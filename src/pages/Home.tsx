@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Heart, Shield, Home as HomeIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 interface Breed {
   id: string;
@@ -19,10 +20,14 @@ interface Breed {
 
 const Home = () => {
   const [featuredBreeds, setFeaturedBreeds] = useState<Breed[]>([]);
+  const [carouselBreeds, setCarouselBreeds] = useState<Breed[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Breed[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     fetchFeaturedBreeds();
+    fetchCarouselBreeds();
   }, []);
 
   const fetchFeaturedBreeds = async () => {
@@ -37,10 +42,34 @@ const Home = () => {
     }
   };
 
-  const handleSearch = (e: React.FormEvent) => {
+  const fetchCarouselBreeds = async () => {
+    const { data, error } = await supabase
+      .from('pets')
+      .select('*')
+      .order('popularity_score', { ascending: false })
+      .limit(10);
+
+    if (!error && data) {
+      setCarouselBreeds(data);
+    }
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      window.location.href = `/breeds?search=${encodeURIComponent(searchQuery)}`;
+      setIsSearching(true);
+      const { data, error } = await supabase
+        .from('pets')
+        .select('*')
+        .ilike('name', `%${searchQuery}%`)
+        .order('name', { ascending: true });
+
+      if (!error && data) {
+        setSearchResults(data);
+      }
+    } else {
+      setIsSearching(false);
+      setSearchResults([]);
     }
   };
 
@@ -62,7 +91,7 @@ const Home = () => {
             </p>
 
             {/* Search Bar */}
-            <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
+            <form onSubmit={handleSearch} className="max-w-2xl mx-auto mb-8">
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
@@ -80,6 +109,58 @@ const Home = () => {
                 </Button>
               </div>
             </form>
+
+            {/* Carousel - Hidden when searching */}
+            {!isSearching && carouselBreeds.length > 0 && (
+              <Carousel className="max-w-5xl mx-auto">
+                <CarouselContent>
+                  {carouselBreeds.map((breed) => (
+                    <CarouselItem key={breed.id} className="md:basis-1/2 lg:basis-1/3">
+                      <div className="p-2">
+                        <BreedCard
+                          id={breed.id}
+                          name={breed.name}
+                          type={breed.type as 'dog' | 'cat'}
+                          temperament={breed.temperament}
+                          size={breed.size}
+                          photos={breed.photos}
+                          origin={breed.origin}
+                        />
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious className="left-0" />
+                <CarouselNext className="right-0" />
+              </Carousel>
+            )}
+
+            {/* Search Results */}
+            {isSearching && (
+              <div className="max-w-7xl mx-auto mt-8">
+                <h3 className="text-2xl font-bold text-foreground mb-6">
+                  Search Results ({searchResults.length})
+                </h3>
+                {searchResults.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {searchResults.map((breed) => (
+                      <BreedCard
+                        key={breed.id}
+                        id={breed.id}
+                        name={breed.name}
+                        type={breed.type as 'dog' | 'cat'}
+                        temperament={breed.temperament}
+                        size={breed.size}
+                        photos={breed.photos}
+                        origin={breed.origin}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center">No results found for "{searchQuery}"</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </section>
