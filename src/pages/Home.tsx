@@ -16,29 +16,17 @@ interface Breed {
   size: string;
   photos: string[];
   origin: string;
+  physical_appearance: string | null;
+  care_requirements: string | null;
 }
 
 const Home = () => {
-  const [featuredBreeds, setFeaturedBreeds] = useState<Breed[]>([]);
   const [allBreeds, setAllBreeds] = useState<Breed[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    fetchFeaturedBreeds();
     fetchAllBreeds();
   }, []);
-
-  const fetchFeaturedBreeds = async () => {
-    const { data, error } = await supabase
-      .from('pets')
-      .select('*')
-      .eq('is_featured', true)
-      .limit(6);
-
-    if (!error && data) {
-      setFeaturedBreeds(data);
-    }
-  };
 
   const fetchAllBreeds = async () => {
     const { data, error } = await supabase
@@ -55,8 +43,14 @@ const Home = () => {
     if (!searchQuery.trim()) {
       return allBreeds;
     }
+    const query = searchQuery.toLowerCase();
     return allBreeds.filter(breed => 
-      breed.name.toLowerCase().includes(searchQuery.toLowerCase())
+      breed.name?.toLowerCase().includes(query) ||
+      breed.size?.toLowerCase().includes(query) ||
+      breed.temperament?.toLowerCase().includes(query) ||
+      breed.origin?.toLowerCase().includes(query) ||
+      breed.physical_appearance?.toLowerCase().includes(query) ||
+      breed.care_requirements?.toLowerCase().includes(query)
     );
   }, [searchQuery, allBreeds]);
 
@@ -85,7 +79,7 @@ const Home = () => {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                   type="text"
-                  placeholder="Search for breeds (e.g., Labrador, German Shepherd)..."
+                  placeholder="Search by name, size, or traits (e.g., loyal, adaptable)..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-12 pr-4 py-6 text-lg rounded-full"
@@ -93,8 +87,8 @@ const Home = () => {
               </div>
             </div>
 
-            {/* Carousel with Images and Titles - Filters based on search */}
-            {filteredBreeds.length > 0 && (
+            {/* Carousel - shown when not searching */}
+            {!isSearching && filteredBreeds.length > 0 && (
               <div className="max-w-5xl mx-auto">
                 <Carousel className="w-full">
                   <CarouselContent className="-ml-2 md:-ml-4">
@@ -122,54 +116,42 @@ const Home = () => {
                   <CarouselNext className="-right-4 md:-right-6" />
                 </Carousel>
                 
-                {isSearching && (
-                  <p className="text-muted-foreground mt-4">
-                    Found {filteredBreeds.length} breed{filteredBreeds.length !== 1 ? 's' : ''} matching "{searchQuery}"
-                  </p>
-                )}
+                <div className="text-center mt-6">
+                  <Link to="/breeds">
+                    <Button size="lg" className="rounded-full">
+                      View All Breeds
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {/* Search Results - shown when searching */}
+            {isSearching && filteredBreeds.length > 0 && (
+              <div className="max-w-6xl mx-auto text-left">
+                <p className="text-muted-foreground mb-6 text-center">
+                  Found {filteredBreeds.length} breed{filteredBreeds.length !== 1 ? 's' : ''} matching "{searchQuery}"
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredBreeds.map((breed) => (
+                    <BreedCard
+                      key={breed.id}
+                      id={breed.id}
+                      name={breed.name}
+                      type={breed.type as 'dog' | 'cat'}
+                      temperament={breed.temperament}
+                      size={breed.size}
+                      photos={breed.photos}
+                      origin={breed.origin}
+                    />
+                  ))}
+                </div>
               </div>
             )}
 
             {isSearching && filteredBreeds.length === 0 && (
               <p className="text-muted-foreground">No breeds found matching "{searchQuery}"</p>
             )}
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Breeds Section */}
-      <section className="py-16 md:py-24">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12 animate-slide-up">
-            <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Featured Breeds
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Popular dog breeds that thrive in India's diverse climates
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 animate-slide-up">
-            {featuredBreeds.map((breed) => (
-              <BreedCard
-                key={breed.id}
-                id={breed.id}
-                name={breed.name}
-                type={breed.type as 'dog' | 'cat'}
-                temperament={breed.temperament}
-                size={breed.size}
-                photos={breed.photos}
-                origin={breed.origin}
-              />
-            ))}
-          </div>
-
-          <div className="text-center">
-            <Link to="/breeds">
-              <Button size="lg" className="rounded-full">
-                View All Breeds
-              </Button>
-            </Link>
           </div>
         </div>
       </section>
