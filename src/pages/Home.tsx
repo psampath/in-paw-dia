@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Navigation } from '@/components/Navigation';
 import { BreedCard } from '@/components/BreedCard';
@@ -20,14 +20,12 @@ interface Breed {
 
 const Home = () => {
   const [featuredBreeds, setFeaturedBreeds] = useState<Breed[]>([]);
-  const [carouselBreeds, setCarouselBreeds] = useState<Breed[]>([]);
+  const [allBreeds, setAllBreeds] = useState<Breed[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<Breed[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     fetchFeaturedBreeds();
-    fetchCarouselBreeds();
+    fetchAllBreeds();
   }, []);
 
   const fetchFeaturedBreeds = async () => {
@@ -42,36 +40,27 @@ const Home = () => {
     }
   };
 
-  const fetchCarouselBreeds = async () => {
+  const fetchAllBreeds = async () => {
     const { data, error } = await supabase
       .from('pets')
       .select('*')
-      .order('popularity_score', { ascending: false })
-      .limit(10);
+      .order('popularity_score', { ascending: false });
 
     if (!error && data) {
-      setCarouselBreeds(data);
+      setAllBreeds(data);
     }
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      setIsSearching(true);
-      const { data, error } = await supabase
-        .from('pets')
-        .select('*')
-        .ilike('name', `%${searchQuery}%`)
-        .order('name', { ascending: true });
-
-      if (!error && data) {
-        setSearchResults(data);
-      }
-    } else {
-      setIsSearching(false);
-      setSearchResults([]);
+  const filteredBreeds = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return allBreeds;
     }
-  };
+    return allBreeds.filter(breed => 
+      breed.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [searchQuery, allBreeds]);
+
+  const isSearching = searchQuery.trim().length > 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -91,75 +80,58 @@ const Home = () => {
             </p>
 
             {/* Search Bar */}
-            <form onSubmit={handleSearch} className="max-w-2xl mx-auto mb-8">
+            <div className="max-w-2xl mx-auto mb-8">
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                   type="text"
-                  placeholder="Search for breeds (e.g., Indian Pariah, Himalayan Cat)..."
+                  placeholder="Search for breeds (e.g., Labrador, German Shepherd)..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-12 pr-4 py-6 text-lg rounded-full"
                 />
-                <Button
-                  type="submit"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full"
-                >
-                  Search
-                </Button>
               </div>
-            </form>
+            </div>
 
-            {/* Carousel - Hidden when searching */}
-            {!isSearching && carouselBreeds.length > 0 && (
-              <Carousel className="max-w-5xl mx-auto">
-                <CarouselContent>
-                  {carouselBreeds.map((breed) => (
-                    <CarouselItem key={breed.id} className="md:basis-1/2 lg:basis-1/3">
-                      <div className="p-2">
-                        <BreedCard
-                          id={breed.id}
-                          name={breed.name}
-                          type={breed.type as 'dog' | 'cat'}
-                          temperament={breed.temperament}
-                          size={breed.size}
-                          photos={breed.photos}
-                          origin={breed.origin}
-                        />
-                      </div>
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-                <CarouselPrevious className="left-0" />
-                <CarouselNext className="right-0" />
-              </Carousel>
-            )}
-
-            {/* Search Results */}
-            {isSearching && (
-              <div className="max-w-7xl mx-auto mt-8">
-                <h3 className="text-2xl font-bold text-foreground mb-6">
-                  Search Results ({searchResults.length})
-                </h3>
-                {searchResults.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {searchResults.map((breed) => (
-                      <BreedCard
-                        key={breed.id}
-                        id={breed.id}
-                        name={breed.name}
-                        type={breed.type as 'dog' | 'cat'}
-                        temperament={breed.temperament}
-                        size={breed.size}
-                        photos={breed.photos}
-                        origin={breed.origin}
-                      />
+            {/* Carousel with Images and Titles - Filters based on search */}
+            {filteredBreeds.length > 0 && (
+              <div className="max-w-5xl mx-auto">
+                <Carousel className="w-full">
+                  <CarouselContent className="-ml-2 md:-ml-4">
+                    {filteredBreeds.map((breed) => (
+                      <CarouselItem key={breed.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
+                        <Link to={`/breeds/${breed.id}`} className="block group">
+                          <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
+                            <img
+                              src={breed.photos?.[0] || 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1'}
+                              alt={breed.name}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                            <div className="absolute bottom-0 left-0 right-0 p-3">
+                              <h3 className="text-white font-heading font-bold text-sm md:text-base truncate">
+                                {breed.name}
+                              </h3>
+                            </div>
+                          </div>
+                        </Link>
+                      </CarouselItem>
                     ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-center">No results found for "{searchQuery}"</p>
+                  </CarouselContent>
+                  <CarouselPrevious className="-left-4 md:-left-6" />
+                  <CarouselNext className="-right-4 md:-right-6" />
+                </Carousel>
+                
+                {isSearching && (
+                  <p className="text-muted-foreground mt-4">
+                    Found {filteredBreeds.length} breed{filteredBreeds.length !== 1 ? 's' : ''} matching "{searchQuery}"
+                  </p>
                 )}
               </div>
+            )}
+
+            {isSearching && filteredBreeds.length === 0 && (
+              <p className="text-muted-foreground">No breeds found matching "{searchQuery}"</p>
             )}
           </div>
         </div>
