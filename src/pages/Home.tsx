@@ -87,28 +87,28 @@ const Home = () => {
               </div>
             </div>
 
-            {/* Carousel - shown when not searching */}
-            {!isSearching && filteredBreeds.length > 0 && (
-              <div className="max-w-5xl mx-auto">
+            {/* Breed Carousel with Cards */}
+            {filteredBreeds.length > 0 && (
+              <div className="max-w-6xl mx-auto">
+                {isSearching && (
+                  <p className="text-muted-foreground mb-6">
+                    Found {filteredBreeds.length} breed{filteredBreeds.length !== 1 ? 's' : ''} matching "{searchQuery}"
+                  </p>
+                )}
+                
                 <Carousel className="w-full">
                   <CarouselContent className="-ml-2 md:-ml-4">
                     {filteredBreeds.map((breed) => (
-                      <CarouselItem key={breed.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
-                        <Link to={`/breeds/${breed.id}`} className="block group">
-                          <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
-                            <img
-                              src={breed.photos?.[0] || 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1'}
-                              alt={breed.name}
-                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                            <div className="absolute bottom-0 left-0 right-0 p-3">
-                              <h3 className="text-white font-heading font-bold text-sm md:text-base truncate">
-                                {breed.name}
-                              </h3>
-                            </div>
-                          </div>
-                        </Link>
+                      <CarouselItem key={breed.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
+                        <BreedCard
+                          id={breed.id}
+                          name={breed.name}
+                          type={breed.type as 'dog' | 'cat'}
+                          temperament={breed.temperament}
+                          size={breed.size}
+                          photos={breed.photos}
+                          origin={breed.origin}
+                        />
                       </CarouselItem>
                     ))}
                   </CarouselContent>
@@ -126,31 +126,10 @@ const Home = () => {
               </div>
             )}
 
-            {/* Search Results - shown when searching */}
-            {isSearching && filteredBreeds.length > 0 && (
-              <div className="max-w-6xl mx-auto text-left">
-                <p className="text-muted-foreground mb-6 text-center">
-                  Found {filteredBreeds.length} breed{filteredBreeds.length !== 1 ? 's' : ''} matching "{searchQuery}"
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredBreeds.map((breed) => (
-                    <BreedCard
-                      key={breed.id}
-                      id={breed.id}
-                      name={breed.name}
-                      type={breed.type as 'dog' | 'cat'}
-                      temperament={breed.temperament}
-                      size={breed.size}
-                      photos={breed.photos}
-                      origin={breed.origin}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {isSearching && filteredBreeds.length === 0 && (
-              <p className="text-muted-foreground">No breeds found matching "{searchQuery}"</p>
+            {filteredBreeds.length === 0 && (
+              <p className="text-muted-foreground">
+                {isSearching ? `No breeds found matching "${searchQuery}"` : 'No breeds available'}
+              </p>
             )}
           </div>
         </div>
