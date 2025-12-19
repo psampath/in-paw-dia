@@ -116,7 +116,7 @@ const Home = () => {
                   <CarouselNext className="-right-4 md:-right-6" />
                 </Carousel>
                 
-                <div className="text-center mt-6">
+                <div className="text-center mt-12 mb-8">
                   <Link to="/breeds">
                     <Button size="lg" className="rounded-full">
                       View All Breeds
