@@ -6,28 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Dog, Cat, Share2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { getPetById } from '@/api/pets';
+import { Pet } from '@/api/types';
 import { toast } from 'sonner';
-
-interface Breed {
-  id: string;
-  name: string;
-  type: string;
-  origin: string;
-  physical_appearance: string;
-  temperament: string;
-  lifespan: string;
-  care_requirements: string;
-  health_issues: string;
-  suitability: string;
-  weight_range: string;
-  size: string;
-  photos: string[];
-}
 
 const BreedProfile = () => {
   const { id } = useParams();
-  const [breed, setBreed] = useState<Breed | null>(null);
+  const [breed, setBreed] = useState<Pet | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
@@ -38,16 +23,14 @@ const BreedProfile = () => {
   }, [id]);
 
   const fetchBreed = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('pets')
-      .select('*')
-      .eq('id', id)
-      .single();
+    if (!id) return;
 
-    if (!error && data) {
+    setLoading(true);
+    try {
+      const data = await getPetById(id);
       setBreed(data);
-    } else {
+    } catch (error) {
+      console.error('Failed to fetch breed:', error);
       toast.error('Breed not found');
     }
     setLoading(false);

@@ -6,23 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Filter, X } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { getAllPets } from '@/api/pets';
+import { Pet } from '@/api/types';
 import { Label } from '@/components/ui/label';
-
-interface Breed {
-  id: string;
-  name: string;
-  type: string;
-  temperament: string;
-  size: string;
-  photos: string[];
-  origin: string;
-}
 
 const Breeds = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [breeds, setBreeds] = useState<Breed[]>([]);
-  const [filteredBreeds, setFilteredBreeds] = useState<Breed[]>([]);
+  const [breeds, setBreeds] = useState<Pet[]>([]);
+  const [filteredBreeds, setFilteredBreeds] = useState<Pet[]>([]);
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || 'all');
   const [sizeFilter, setSizeFilter] = useState(searchParams.get('size') || 'all');
@@ -40,13 +31,13 @@ const Breeds = () => {
 
   const fetchBreeds = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('pets')
-      .select('*')
-      .order('name', { ascending: true });
-
-    if (!error && data) {
-      setBreeds(data);
+    try {
+      const data = await getAllPets();
+      // Sort by name
+      const sorted = [...data].sort((a, b) => a.name.localeCompare(b.name));
+      setBreeds(sorted);
+    } catch (error) {
+      console.error('Failed to fetch breeds:', error);
     }
     setLoading(false);
   };
@@ -210,14 +201,14 @@ const Breeds = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredBreeds.map((breed) => (
               <BreedCard
-                key={breed.id}
-                id={breed.id}
+                key={breed._id}
+                id={breed._id}
                 name={breed.name}
-                type={breed.type as 'dog' | 'cat'}
-                temperament={breed.temperament}
-                size={breed.size}
-                photos={breed.photos}
-                origin={breed.origin}
+                type={breed.type}
+                temperament={breed.temperament || ''}
+                size={breed.size || ''}
+                photos={breed.photos || []}
+                origin={breed.origin || ''}
               />
             ))}
           </div>

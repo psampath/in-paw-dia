@@ -5,23 +5,12 @@ import { BreedCard } from '@/components/BreedCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Heart, Shield, Home as HomeIcon } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { getAllPets } from '@/api/pets';
+import { Pet } from '@/api/types';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
-interface Breed {
-  id: string;
-  name: string;
-  type: string;
-  temperament: string;
-  size: string;
-  photos: string[];
-  origin: string;
-  physical_appearance: string | null;
-  care_requirements: string | null;
-}
-
 const Home = () => {
-  const [allBreeds, setAllBreeds] = useState<Breed[]>([]);
+  const [allBreeds, setAllBreeds] = useState<Pet[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -29,13 +18,15 @@ const Home = () => {
   }, []);
 
   const fetchAllBreeds = async () => {
-    const { data, error } = await supabase
-      .from('pets')
-      .select('*')
-      .order('popularity_score', { ascending: false });
-
-    if (!error && data) {
-      setAllBreeds(data);
+    try {
+      const data = await getAllPets();
+      // Sort by popularity_score (descending)
+      const sorted = [...data].sort((a, b) =>
+        (b.popularity_score || 0) - (a.popularity_score || 0)
+      );
+      setAllBreeds(sorted);
+    } catch (error) {
+      console.error('Failed to fetch breeds:', error);
     }
   };
 
@@ -99,15 +90,15 @@ const Home = () => {
                 <Carousel className="w-full">
                   <CarouselContent className="-ml-2 md:-ml-4">
                     {filteredBreeds.map((breed) => (
-                      <CarouselItem key={breed.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
+                      <CarouselItem key={breed._id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
                         <BreedCard
-                          id={breed.id}
+                          id={breed._id}
                           name={breed.name}
-                          type={breed.type as 'dog' | 'cat'}
-                          temperament={breed.temperament}
-                          size={breed.size}
-                          photos={breed.photos}
-                          origin={breed.origin}
+                          type={breed.type}
+                          temperament={breed.temperament || ''}
+                          size={breed.size || ''}
+                          photos={breed.photos || []}
+                          origin={breed.origin || ''}
                         />
                       </CarouselItem>
                     ))}
@@ -116,7 +107,8 @@ const Home = () => {
                   <CarouselNext className="-right-4 md:-right-6" />
                 </Carousel>
                 
-                <div className="text-center mt-12 mb-8">
+                {/* Increased spacing below carousel */}
+                <div className="text-center mt-10 md:mt-14 mb-8">
                   <Link to="/breeds">
                     <Button size="lg" className="rounded-full">
                       View All Breeds
@@ -136,15 +128,15 @@ const Home = () => {
       </section>
 
       {/* Categories Section */}
-      <section className="py-16 md:py-24 bg-muted/30">
+      <section className="pt-4 md:pt-6 pb-10 md:pb-14 bg-muted/30"> {/* was: pt-8 md:pt-12 pb-16 md:pb-24 */}
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
+          <div className="text-center mb-8"> {/* was: mb-12 */}
             <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-4">
               Browse by Category
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-5xl mx-auto"> {/* was: gap-6 */}
             <Link to="/breeds?origin=India">
               <div className="bg-card p-8 rounded-xl border border-border hover:border-primary hover:shadow-lg transition-all duration-300 text-center group">
                 <Shield className="h-12 w-12 text-primary mx-auto mb-4 group-hover:scale-110 transition-transform" />

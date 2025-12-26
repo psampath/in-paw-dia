@@ -1,12 +1,13 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { User, UserRole } from '@/api/types';
+import * as authAPI from '@/api/auth';
+import { tokenManager } from '@/lib/tokenManager';
+import { toast } from 'sonner';
 
 interface AuthContextType {
   user: User | null;
-  session: Session | null;
-  userRole: string | null;
+  userRole: UserRole | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
@@ -17,106 +18,101 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Check for existing session on mount
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Fetch user roles from secure user_roles table
-          setTimeout(async () => {
-            const { data: rolesData } = await supabase
-              .from('user_roles')
-              .select('role')
-              .eq('user_id', session.user.id);
-            
-            // Set the highest role (admin > editor > viewer)
-            if (rolesData && rolesData.length > 0) {
-              if (rolesData.some(r => r.role === 'admin')) {
-                setUserRole('admin');
-              } else if (rolesData.some(r => r.role === 'editor')) {
-                setUserRole('editor');
-              } else {
-                setUserRole('viewer');
-              }
-            } else {
-              setUserRole(null);
-            }
-          }, 0);
-        } else {
-          setUserRole(null);
-        }
-      }
-    );
+    const initAuth = async () => {
+      const accessToken = tokenManager.getAccessToken();
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .then(({ data: rolesData }) => {
-            // Set the highest role
-            if (rolesData && rolesData.length > 0) {
-              if (rolesData.some(r => r.role === 'admin')) {
-                setUserRole('admin');
-              } else if (rolesData.some(r => r.role === 'editor')) {
-                setUserRole('editor');
-              } else {
-                setUserRole('viewer');
-              }
-            } else {
-              setUserRole(null);
-            }
-            setLoading(false);
-          });
-      } else {
+      if (!accessToken) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Verify token is still valid by fetching current user
+        const response = await authAPI.getCurrentUser();
+        setUser(response.user);
+        setUserRole(response.user.role);
+      } catch (error) {
+        // Token is invalid or expired
+        console.error('Failed to restore session:', error);
+        tokenManager.clearAllTokens();
+      } finally {
         setLoading(false);
       }
-    });
+    };
 
-    return () => subscription.unsubscribe();
+    initAuth();
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    try {
+      const response = await authAPI.login(email, password);
+
+      // Save tokens
+      tokenManager.setAccessToken(response.accessToken);
+      tokenManager.setRefreshToken(response.refreshToken);
+
+      // Set user state
+      setUser(response.user);
+      setUserRole(response.user.role);
+
+      toast.success('Logged in successfully!');
+      return { error: null };
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || 'Failed to sign in';
+      console.error('Sign in error:', error);
+      return { error: errorMessage };
+    }
   };
 
   const signUp = async (email: string, password: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl
-      }
-    });
-    return { error };
+    try {
+      const response = await authAPI.register(email, password);
+
+      // Save tokens
+      tokenManager.setAccessToken(response.accessToken);
+      tokenManager.setRefreshToken(response.refreshToken);
+
+      // Set user state
+      setUser(response.user);
+      setUserRole(response.user.role);
+
+      toast.success('Account created successfully!');
+      return { error: null };
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || 'Failed to sign up';
+      console.error('Sign up error:', error);
+      return { error: errorMessage };
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    navigate('/');
+    try {
+      const refreshToken = tokenManager.getRefreshToken();
+      if (refreshToken) {
+        await authAPI.logout(refreshToken);
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Clear tokens and state regardless of API call success
+      tokenManager.clearAllTokens();
+      setUser(null);
+      setUserRole(null);
+      navigate('/');
+      toast.success('Logged out successfully');
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, userRole, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider
+      value={{ user, userRole, loading, signIn, signUp, signOut }}
+    >
       {children}
     </AuthContext.Provider>
   );

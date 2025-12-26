@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Save } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { getPetById, createPet, updatePet } from '@/api/pets';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -47,9 +47,10 @@ const AdminBreedForm = () => {
   }, [user, userRole, isEdit, id, navigate]);
 
   const fetchBreed = async () => {
-    const { data, error } = await supabase.from('pets').select('*').eq('id', id).single();
+    if (!id) return;
 
-    if (!error && data) {
+    try {
+      const data = await getPetById(id);
       setFormData({
         name: data.name || '',
         type: data.type || 'dog',
@@ -65,7 +66,8 @@ const AdminBreedForm = () => {
         photos: data.photos && data.photos.length > 0 ? data.photos : [''],
         is_featured: data.is_featured || false,
       });
-    } else {
+    } catch (error) {
+      console.error('Failed to fetch breed:', error);
       toast.error('Pet not found');
       navigate('/admin');
     }
@@ -83,27 +85,21 @@ const AdminBreedForm = () => {
       photos,
     };
 
-    let error;
-
-    if (isEdit) {
-      const { error: updateError } = await supabase
-        .from('pets')
-        .update(breedData)
-        .eq('id', id);
-      error = updateError;
-    } else {
-      const { error: insertError } = await supabase.from('pets').insert([breedData]);
-      error = insertError;
-    }
-
-    if (error) {
-      toast.error(error.message || 'Failed to save breed');
-    } else {
-      toast.success(`Breed ${isEdit ? 'updated' : 'created'} successfully!`);
+    try {
+      if (isEdit && id) {
+        await updatePet(id, breedData);
+        toast.success('Breed updated successfully');
+      } else {
+        await createPet(breedData);
+        toast.success('Breed created successfully');
+      }
       navigate('/admin');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || 'Failed to save breed';
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const handlePhotoChange = (index: number, value: string) => {

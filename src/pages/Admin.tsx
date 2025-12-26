@@ -6,21 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { getAllPets, deletePet } from '@/api/pets';
+import { Pet } from '@/api/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-interface Breed {
-  id: string;
-  name: string;
-  type: string;
-  origin: string;
-  size: string;
-  updated_at: string;
-}
-
 const Admin = () => {
-  const [breeds, setBreeds] = useState<Breed[]>([]);
+  const [breeds, setBreeds] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
   const { user, userRole } = useAuth();
   const navigate = useNavigate();
@@ -35,13 +27,16 @@ const Admin = () => {
 
   const fetchBreeds = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('pets')
-      .select('id, name, type, origin, size, updated_at')
-      .order('updated_at', { ascending: false });
-
-    if (!error && data) {
-      setBreeds(data);
+    try {
+      const data = await getAllPets();
+      // Sort by updatedAt (descending)
+      const sorted = [...data].sort((a, b) =>
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      );
+      setBreeds(sorted);
+    } catch (error) {
+      console.error('Failed to fetch breeds:', error);
+      toast.error('Failed to fetch breeds');
     }
     setLoading(false);
   };
@@ -51,13 +46,13 @@ const Admin = () => {
       return;
     }
 
-    const { error } = await supabase.from('pets').delete().eq('id', id);
-
-    if (error) {
-      toast.error('Failed to delete breed');
-    } else {
+    try {
+      await deletePet(id);
       toast.success('Breed deleted successfully');
       fetchBreeds();
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || 'Failed to delete breed';
+      toast.error(errorMessage);
     }
   };
 
@@ -142,7 +137,7 @@ const Admin = () => {
                 </TableHeader>
                 <TableBody>
                   {breeds.map((breed) => (
-                    <TableRow key={breed.id}>
+                    <TableRow key={breed._id}>
                       <TableCell className="font-medium">{breed.name}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className="capitalize">
@@ -150,13 +145,13 @@ const Admin = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>{breed.origin || '-'}</TableCell>
-                      <TableCell>{breed.size}</TableCell>
-                      <TableCell>{new Date(breed.updated_at).toLocaleDateString()}</TableCell>
+                      <TableCell>{breed.size || '-'}</TableCell>
+                      <TableCell>{new Date(breed.updatedAt).toLocaleDateString()}</TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => navigate(`/admin/breed/${breed.id}`)}
+                          onClick={() => navigate(`/admin/breed/${breed._id}`)}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -164,7 +159,7 @@ const Admin = () => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(breed.id, breed.name)}
+                            onClick={() => handleDelete(breed._id, breed.name)}
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
