@@ -6,8 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
-import { getAllPets, deletePet } from '@/api/pets';
-import { Pet } from '@/api/types';
+import { getAllPets, deletePet, Pet } from '@/lib/pets';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -29,9 +28,8 @@ const Admin = () => {
     setLoading(true);
     try {
       const data = await getAllPets();
-      // Sort by updatedAt (descending)
       const sorted = [...data].sort((a, b) =>
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
       );
       setBreeds(sorted);
     } catch (error) {
@@ -42,17 +40,13 @@ const Admin = () => {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete ${name}?`)) {
-      return;
-    }
-
+    if (!confirm(`Are you sure you want to delete ${name}?`)) return;
     try {
       await deletePet(id);
       toast.success('Breed deleted successfully');
       fetchBreeds();
     } catch (error: any) {
-      const errorMessage = error.response?.data?.error || 'Failed to delete breed';
-      toast.error(errorMessage);
+      toast.error(error.message || 'Failed to delete breed');
     }
   };
 
@@ -70,58 +64,25 @@ const Admin = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="font-heading text-3xl md:text-5xl font-bold text-foreground mb-2">
-              Admin Dashboard
-            </h1>
+            <h1 className="font-heading text-3xl md:text-5xl font-bold text-foreground mb-2">Admin Dashboard</h1>
             <p className="text-muted-foreground">Manage breed information</p>
           </div>
           <Button onClick={() => navigate('/admin/breed/new')}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Breed
+            <Plus className="h-4 w-4 mr-2" />Add Breed
           </Button>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Total Breeds</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-primary">{breeds.length}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Dog Breeds</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-primary">
-                {breeds.filter((b) => b.type === 'dog').length}
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Cat Breeds</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-primary">
-                {breeds.filter((b) => b.type === 'cat').length}
-              </p>
-            </CardContent>
-          </Card>
+          <Card><CardHeader><CardTitle className="text-sm font-medium">Total Breeds</CardTitle></CardHeader><CardContent><p className="text-3xl font-bold text-primary">{breeds.length}</p></CardContent></Card>
+          <Card><CardHeader><CardTitle className="text-sm font-medium">Dog Breeds</CardTitle></CardHeader><CardContent><p className="text-3xl font-bold text-primary">{breeds.filter((b) => b.type === 'dog').length}</p></CardContent></Card>
+          <Card><CardHeader><CardTitle className="text-sm font-medium">Cat Breeds</CardTitle></CardHeader><CardContent><p className="text-3xl font-bold text-primary">{breeds.filter((b) => b.type === 'cat').length}</p></CardContent></Card>
         </div>
 
-        {/* Breeds Table */}
         <Card>
-          <CardHeader>
-            <CardTitle>All Breeds</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>All Breeds</CardTitle></CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <Table>
@@ -137,30 +98,18 @@ const Admin = () => {
                 </TableHeader>
                 <TableBody>
                   {breeds.map((breed) => (
-                    <TableRow key={breed._id}>
+                    <TableRow key={breed.id}>
                       <TableCell className="font-medium">{breed.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="capitalize">
-                          {breed.type}
-                        </Badge>
-                      </TableCell>
+                      <TableCell><Badge variant="outline" className="capitalize">{breed.type}</Badge></TableCell>
                       <TableCell>{breed.origin || '-'}</TableCell>
                       <TableCell>{breed.size || '-'}</TableCell>
-                      <TableCell>{new Date(breed.updatedAt).toLocaleDateString()}</TableCell>
+                      <TableCell>{new Date(breed.updated_at).toLocaleDateString()}</TableCell>
                       <TableCell className="text-right space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => navigate(`/admin/breed/${breed._id}`)}
-                        >
+                        <Button variant="ghost" size="icon" onClick={() => navigate(`/admin/breed/${breed.id}`)}>
                           <Pencil className="h-4 w-4" />
                         </Button>
                         {userRole === 'admin' && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(breed._id, breed.name)}
-                          >
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(breed.id, breed.name)}>
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         )}
